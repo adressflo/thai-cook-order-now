@@ -2,6 +2,7 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { MapPin, Phone, Mail, Clock } from 'lucide-react';
 
 const Home = () => {
   const features = [
@@ -28,6 +29,15 @@ const Home = () => {
       <section className="relative bg-gradient-thai py-20 px-4">
         <div className="container mx-auto text-center">
           <div className="max-w-4xl mx-auto animate-fade-in">
+            {/* Logo Integration */}
+            <div className="mb-8">
+              <img 
+                src="/lovable-uploads/62d46b15-aa56-45d2-ab7d-75dfee70f70d.png" 
+                alt="Chanthana Thai Cook Logo"
+                className="w-32 h-32 mx-auto mb-6 rounded-full shadow-xl"
+              />
+            </div>
+            
             <h1 className="text-5xl md:text-7xl font-bold text-thai-green mb-6">
               Bienvenue chez{' '}
               <span className="text-gradient">ChanthanaThaiCook</span>
@@ -50,6 +60,55 @@ const Home = () => {
         {/* Decorative elements */}
         <div className="absolute top-10 left-10 w-20 h-20 bg-thai-gold/20 rounded-full blur-xl"></div>
         <div className="absolute bottom-10 right-10 w-32 h-32 bg-thai-orange/20 rounded-full blur-xl"></div>
+      </section>
+
+      {/* Cuisine Thaï Section */}
+      <section className="py-20 px-4 bg-white">
+        <div className="container mx-auto">
+          <div className="max-w-4xl mx-auto">
+            <div className="text-center mb-12">
+              <h2 className="text-4xl font-bold text-thai-green mb-6">CUISINE THAÏ</h2>
+            </div>
+            <div className="bg-gradient-to-br from-thai-cream to-white p-8 rounded-2xl shadow-lg border border-thai-orange/20">
+              <p className="text-lg text-thai-green/80 leading-relaxed text-justify">
+                La cuisine thaïlandaise est réputée dans le monde entier pour la maîtrise de l'équilibre des saveurs. 
+                L'art du mariage du sucré, de l'aigre-doux, du salé et du piquant donne des plats d'une saveur étonnante. 
+                Savourez des repas thaïlandais typiquement authentiques mixant une diversité d'ingrédients du riz, du poisson, 
+                du poulet, des salades, des légumes et parfois même du porc ou du bœuf. Je propose des menus complets à emporter 
+                et autres délices qui se renouvellent chaque semaine. Partez à la découverte de ces plats authentiques et 
+                laissez-vous surprendre en les commandant.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Chanthana Thai Cook Section */}
+      <section className="py-20 px-4 bg-gradient-to-br from-thai-orange/5 to-thai-gold/5">
+        <div className="container mx-auto">
+          <div className="max-w-6xl mx-auto">
+            <div className="grid md:grid-cols-2 gap-12 items-center">
+              <div>
+                <h2 className="text-4xl font-bold text-thai-green mb-6">CHANTHANA THAI COOK</h2>
+                <div className="bg-white p-8 rounded-2xl shadow-lg border border-thai-orange/20">
+                  <p className="text-lg text-thai-green/80 leading-relaxed text-justify">
+                    J'ai quitté la Thaïlande pour m'installer en France par amour depuis 2002. Par amour pour ma famille, 
+                    pour mon pays natal et surtout par passion pour la cuisine thaïlandaise, mon souhait est de vous faire 
+                    découvrir la culture et la diversité des saveurs de la Thaïlande. Mon art originaire d'Isan, la région 
+                    authentique Thaï qui garde ses secrets. Découvrez la véritable cuisine thaïlandaise.
+                  </p>
+                </div>
+              </div>
+              <div className="flex justify-center">
+                <img 
+                  src="/lovable-uploads/ac918784-d65c-427a-9316-7598173177dd.png" 
+                  alt="Chanthana en cuisine"
+                  className="w-80 h-80 object-cover rounded-full shadow-2xl border-4 border-thai-orange/20"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
 
       {/* Features Section */}
@@ -80,6 +139,73 @@ const Home = () => {
                 </CardContent>
               </Card>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Contact Section */}
+      <section className="py-20 px-4 bg-gradient-to-br from-thai-green/10 to-thai-orange/10">
+        <div className="container mx-auto">
+          <div className="max-w-4xl mx-auto">
+            <div className="text-center mb-12">
+              <h2 className="text-4xl font-bold text-thai-green mb-6">Nous Trouver</h2>
+              <p className="text-xl text-thai-green/70">
+                Venez découvrir nos saveurs authentiques
+              </p>
+            </div>
+            
+            <div className="bg-white p-8 rounded-2xl shadow-lg border border-thai-orange/20">
+              <div className="grid md:grid-cols-2 gap-8">
+                <div className="space-y-6">
+                  <div className="flex items-start space-x-4">
+                    <MapPin className="w-6 h-6 text-thai-orange mt-1 flex-shrink-0" />
+                    <div>
+                      <h3 className="font-semibold text-thai-green mb-1">Adresse</h3>
+                      <p className="text-thai-green/70">
+                        [Adresse à compléter]<br />
+                        [Code postal] [Ville]
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start space-x-4">
+                    <Phone className="w-6 h-6 text-thai-orange mt-1 flex-shrink-0" />
+                    <div>
+                      <h3 className="font-semibold text-thai-green mb-1">Téléphone</h3>
+                      <p className="text-thai-green/70">[Numéro à compléter]</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start space-x-4">
+                    <Mail className="w-6 h-6 text-thai-orange mt-1 flex-shrink-0" />
+                    <div>
+                      <h3 className="font-semibold text-thai-green mb-1">Email</h3>
+                      <p className="text-thai-green/70">[Email à compléter]</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start space-x-4">
+                    <Clock className="w-6 h-6 text-thai-orange mt-1 flex-shrink-0" />
+                    <div>
+                      <h3 className="font-semibold text-thai-green mb-1">Horaires</h3>
+                      <p className="text-thai-green/70">
+                        Sur commande uniquement<br />
+                        Mercredi et Samedi<br />
+                        [Horaires à compléter]
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex justify-center items-center">
+                  <img 
+                    src="/lovable-uploads/d3c49259-a59d-45b8-9ad1-9d2f843b4562.png" 
+                    alt="Carte de visite Chanthana Thai Cook"
+                    className="max-w-full h-auto rounded-lg shadow-lg"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
