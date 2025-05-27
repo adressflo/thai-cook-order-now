@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import Commander from "./pages/Commander";
 import Evenements from "./pages/Evenements";
 import Profil from "./pages/Profil";
+import AirtableTest from "./pages/AirtableTest";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
