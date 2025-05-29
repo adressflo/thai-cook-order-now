@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { airtableService } from '@/services/airtableService';
@@ -65,7 +64,6 @@ export const usePlats = () => {
   
   const plats: Plat[] = data?.records.map(record => {
     // Calcul de disponibilité dynamique selon le cahier des charges V2.0
-    const today = new Date().toLocaleLowerCase();
     const dayNames = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
     const todayName = dayNames[new Date().getDay()];
     
