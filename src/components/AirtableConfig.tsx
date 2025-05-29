@@ -13,7 +13,7 @@ const AirtableConfig = () => {
   const { config, updateConfig, clearConfig } = useAirtableConfig();
   const { toast } = useToast();
   const [formData, setFormData] = useState({
-    apiKey: config?.apiKey || '',
+    apiKey: config?.apiKey || 'patv1NAa7UcbOsZci.691853f527b865aeb7c799efc1d98d58e30b0b1c2429ef8a4deac404b086658c',
     baseId: config?.baseId || 'appjSFSHxwJqhnUJj',
     tableName: config?.tableName || 'Plats DB'
   });
@@ -33,8 +33,19 @@ const AirtableConfig = () => {
       });
 
       if (!response.ok) {
+        const errorData = await response.json();
+        console.log('Airtable API Error:', errorData);
+        
+        if (response.status === 403) {
+          throw new Error(`Erreur de permissions (403): Vérifiez que votre token a les permissions 'data.records:read' et 'data.records:write' pour la base ${formData.baseId} et la table '${formData.tableName}'`);
+        } else if (response.status === 404) {
+          throw new Error(`Table ou base non trouvée (404): Vérifiez que la base ${formData.baseId} et la table '${formData.tableName}' existent`);
+        }
         throw new Error(`Erreur de connexion: ${response.status} ${response.statusText}`);
       }
+
+      const data = await response.json();
+      console.log('Airtable connection test successful:', data);
 
       updateConfig(formData);
       toast({
@@ -42,6 +53,7 @@ const AirtableConfig = () => {
         description: "La connexion à Airtable a été établie avec succès.",
       });
     } catch (error) {
+      console.error('Airtable config error:', error);
       toast({
         title: "Erreur de configuration",
         description: error instanceof Error ? error.message : "Impossible de se connecter à Airtable",
@@ -89,6 +101,18 @@ const AirtableConfig = () => {
               </Alert>
             )}
 
+            <Alert className="mb-6 border-red-200 bg-red-50">
+              <AlertCircle className="h-4 w-4 text-red-600" />
+              <AlertDescription className="text-red-800">
+                <strong>Important :</strong> Votre token doit avoir les permissions suivantes :
+                <ul className="list-disc ml-4 mt-2">
+                  <li><code>data.records:read</code> - pour lire les données</li>
+                  <li><code>data.records:write</code> - pour créer des commandes</li>
+                </ul>
+                Et l'accès à la base <code>appjSFSHxwJqhnUJj</code>
+              </AlertDescription>
+            </Alert>
+
             <Alert className="mb-6 border-blue-200 bg-blue-50">
               <AlertCircle className="h-4 w-4 text-blue-600" />
               <AlertDescription className="text-blue-800">
@@ -105,18 +129,6 @@ const AirtableConfig = () => {
               </AlertDescription>
             </Alert>
 
-            <Alert className="mb-6 border-amber-200 bg-amber-50">
-              <Settings className="h-4 w-4 text-amber-600" />
-              <AlertDescription className="text-amber-800">
-                <strong>Architecture Airtable Sync :</strong> Version 2.0 avec synchronisation temps réel (&lt;5s latence) :<br />
-                • <strong>Client DB</strong> : Profils clients avec champs Select et Rollup<br />
-                • <strong>Plats DB</strong> : Menu dynamique avec disponibilité par jour et Linked Records<br />
-                • <strong>Commandes</strong> : Workflow 4 étapes avec automations push<br />
-                • <strong>Demandes Traiteur</strong> : Système RBAC avec 5 niveaux d'accès<br />
-                • <strong>Stocks</strong> : Gestion automatisée avec seuils d'alerte (&lt;20%)
-              </AlertDescription>
-            </Alert>
-
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="apiKey" className="text-thai-green font-medium">
@@ -124,7 +136,7 @@ const AirtableConfig = () => {
                 </Label>
                 <Input
                   id="apiKey"
-                  type="password"
+                  type="text"
                   value={formData.apiKey}
                   onChange={(e) => setFormData({...formData, apiKey: e.target.value})}
                   placeholder="patXXXXXXXXXXXXXX.XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
@@ -146,13 +158,13 @@ const AirtableConfig = () => {
                   className="border-thai-orange/30 focus:border-thai-orange font-mono"
                 />
                 <p className="text-sm text-thai-green/70">
-                  Base Chanthanathai Cook : appjSFSHxwJqhnUJj (Plan Business - 50 sources sync)
+                  Base Chanthanathai Cook : appjSFSHxwJqhnUJj
                 </p>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="tableName" className="text-thai-green font-medium">
-                  Table par Défaut (Plats DB)
+                  Table par Défaut
                 </Label>
                 <Input
                   id="tableName"
@@ -162,7 +174,7 @@ const AirtableConfig = () => {
                   className="border-thai-orange/30 focus:border-thai-orange"
                 />
                 <p className="text-sm text-thai-green/70">
-                  Table principale pour l'affichage des menus avec disponibilité temps réel
+                  Tables disponibles : Plats DB, Client DB, Commandes, Demandes Traiteur
                 </p>
               </div>
 
@@ -189,24 +201,12 @@ const AirtableConfig = () => {
             </form>
 
             <div className="mt-8 p-4 bg-thai-cream/30 rounded-lg">
-              <h4 className="font-semibold text-thai-green mb-2">🔒 Sécurité Avancée (V2.0)</h4>
+              <h4 className="font-semibold text-thai-green mb-2">🔧 Structure des Tables Attendues</h4>
               <ul className="text-sm text-thai-green/80 space-y-1">
-                <li>• Chiffrement AES-256 des champs sensibles</li>
-                <li>• Rotation hebdomadaire des clés API automatique</li>
-                <li>• Sauvegardes multi-cloud avec réplication cross-region</li>
-                <li>• Journalisation des accès en temps réel</li>
-                <li>• Algorithme "Last Write Wins" avec journal d'audit</li>
-              </ul>
-            </div>
-
-            <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-              <h4 className="font-semibold text-blue-800 mb-2">⚡ Performance & Limites</h4>
-              <ul className="text-sm text-blue-700 space-y-1">
-                <li>• Synchronisation temps réel : &lt;5s de latence</li>
-                <li>• Limite : 10 000 enregistrements par table</li>
-                <li>• Limiteur API : 100 requêtes/minute</li>
-                <li>• Capacité : jusqu'à 10 000 commandes/mois</li>
-                <li>• Stratégie de sharding géographique pour extension</li>
+                <li>• <strong>Plats DB</strong> : Nom, Description, Prix, Categorie, Disponible</li>
+                <li>• <strong>Client DB</strong> : Nom, Prenom, Email, Telephone</li>
+                <li>• <strong>Commandes</strong> : Client Email, Total, Date Retrait, Statut</li>
+                <li>• <strong>Demandes Traiteur</strong> : Nom Evenement, Type, Date, Contact</li>
               </ul>
             </div>
           </CardContent>
