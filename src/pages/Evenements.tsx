@@ -7,38 +7,34 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, Users, Database, AlertCircle } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
-
-// Simulation de plats pour sélection événement (sans prix affichés)
-const platsEvenements = [
-  { id: 1, nom: "Pad Thaï aux Crevettes", description: "Nouilles de riz sautées aux crevettes" },
-  { id: 2, nom: "Tom Yum Kung", description: "Soupe épicée et acidulée aux crevettes" },
-  { id: 3, nom: "Curry Vert au Poulet", description: "Curry traditionnel au lait de coco" },
-  { id: 4, nom: "Som Tam", description: "Salade fraîche de papaye verte" },
-  { id: 5, nom: "Massaman Curry", description: "Curry doux aux cacahuètes" },
-  { id: 6, nom: "Larb Gai", description: "Salade de poulet épicée" },
-  { id: 7, nom: "Mango Sticky Rice", description: "Riz gluant à la mangue" },
-  { id: 8, nom: "Spring Rolls", description: "Rouleaux de printemps frais" }
-];
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Link } from 'react-router-dom';
+import { usePlats, useAirtableConfig, useCreateDemandeTraiteur } from '@/hooks/useAirtable';
 
 const Evenements = () => {
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
+  const { config } = useAirtableConfig();
+  const { plats } = usePlats();
+  const createDemandeTraiteur = useCreateDemandeTraiteur();
+  
   const [dateEvenement, setDateEvenement] = useState<Date>();
-  const [platsSelectionnes, setPlatsSelectionnes] = useState<number[]>([]);
+  const [platsSelectionnes, setPlatsSelectionnes] = useState<string[]>([]);
   
   const [formData, setFormData] = useState({
     nomEvenement: '',
     typeEvenement: '',
     nombrePersonnes: '',
     budgetClient: '',
-    demandesSpeciales: ''
+    demandesSpeciales: '',
+    contactEmail: '',
+    contactTelephone: ''
   });
 
   const typesEvenements = [
@@ -58,7 +54,7 @@ const Evenements = () => {
     }));
   };
 
-  const togglePlatSelection = (platId: number) => {
+  const togglePlatSelection = (platId: string) => {
     setPlatsSelectionnes(prev => 
       prev.includes(platId)
         ? prev.filter(id => id !== platId)
@@ -68,28 +64,26 @@ const Evenements = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-    
+
+    if (!dateEvenement || !formData.contactEmail) {
+      toast({
+        title: "Informations manquantes",
+        description: "Veuillez remplir tous les champs obligatoires.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
-      const platsSelectionnesDetails = platsEvenements.filter(plat => 
+      const platsSelectionnesDetails = plats.filter(plat => 
         platsSelectionnes.includes(plat.id)
       );
 
-      const evenement = {
+      await createDemandeTraiteur.mutateAsync({
         ...formData,
-        dateEvenement: dateEvenement,
-        platsSelectionnes: platsSelectionnesDetails,
-        timestamp: new Date().toISOString()
-      };
-
-      console.log('Demande d\'événement envoyée vers n8n:', evenement);
-      
-      // Ici, vous ajouterez l'appel réel vers votre webhook n8n
-      // const response = await fetch('VOTRE_WEBHOOK_N8N_EVENEMENT_URL', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(evenement)
-      // });
+        dateEvenement: dateEvenement.toISOString(),
+        platsSelectionnes: platsSelectionnesDetails
+      });
       
       toast({
         title: "Demande envoyée avec succès !",
@@ -102,7 +96,9 @@ const Evenements = () => {
         typeEvenement: '',
         nombrePersonnes: '',
         budgetClient: '',
-        demandesSpeciales: ''
+        demandesSpeciales: '',
+        contactEmail: '',
+        contactTelephone: ''
       });
       setDateEvenement(undefined);
       setPlatsSelectionnes([]);
@@ -113,24 +109,83 @@ const Evenements = () => {
         description: "Une erreur est survenue lors de l'envoi de votre demande.",
         variant: "destructive",
       });
-    } finally {
-      setIsLoading(false);
     }
   };
+
+  // Configuration Airtable manquante
+  if (!config) {
+    return (
+      <div className="min-h-screen bg-gradient-thai py-8 px-4">
+        <div className="container mx-auto max-w-2xl">
+          <Alert className="border-amber-200 bg-amber-50">
+            <Database className="h-4 w-4 text-amber-600" />
+            <AlertDescription className="text-amber-800">
+              <strong>Configuration requise :</strong> Veuillez d'abord configurer votre connexion Airtable pour traiter les demandes d'événements.
+            </AlertDescription>
+          </Alert>
+          <div className="text-center mt-6">
+            <Link to="/airtable-config">
+              <Button className="bg-thai-orange hover:bg-thai-orange-dark">
+                Configurer Airtable
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-thai py-8 px-4">
       <div className="container mx-auto max-w-3xl">
         <Card className="shadow-xl border-thai-orange/20">
           <CardHeader className="text-center bg-gradient-to-r from-thai-orange to-thai-gold text-white rounded-t-lg">
-            <CardTitle className="text-3xl font-bold">Demande pour Groupe ou Événement</CardTitle>
+            <div className="flex items-center justify-center mb-2">
+              <Users className="h-8 w-8 mr-2" />
+              <CardTitle className="text-3xl font-bold">Demande pour Groupe ou Événement</CardTitle>
+            </div>
             <CardDescription className="text-white/90">
-              Organisez votre événement avec nos menus personnalisés
+              Organisez votre événement avec nos menus personnalisés (minimum 10 personnes)
             </CardDescription>
           </CardHeader>
           
           <CardContent className="p-8">
+            <Alert className="mb-6 border-blue-200 bg-blue-50">
+              <AlertCircle className="h-4 w-4 text-blue-600" />
+              <AlertDescription className="text-blue-800">
+                <strong>Service traiteur :</strong> Commande minimum 10 personnes • Préavis de 2 semaines requis • 
+                Nous vous contacterons pour établir un menu personnalisé et un devis.
+              </AlertDescription>
+            </Alert>
+
             <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Informations de contact */}
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="contactEmail" className="text-thai-green font-medium">Email de contact *</Label>
+                  <Input
+                    id="contactEmail"
+                    type="email"
+                    value={formData.contactEmail}
+                    onChange={(e) => handleInputChange('contactEmail', e.target.value)}
+                    required
+                    className="border-thai-orange/30 focus:border-thai-orange"
+                    placeholder="votre.email@example.com"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="contactTelephone" className="text-thai-green font-medium">Téléphone</Label>
+                  <Input
+                    id="contactTelephone"
+                    value={formData.contactTelephone}
+                    onChange={(e) => handleInputChange('contactTelephone', e.target.value)}
+                    className="border-thai-orange/30 focus:border-thai-orange"
+                    placeholder="06 12 34 56 78"
+                  />
+                </div>
+              </div>
+
               {/* Informations de base */}
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -181,12 +236,19 @@ const Evenements = () => {
                       mode="single"
                       selected={dateEvenement}
                       onSelect={setDateEvenement}
-                      disabled={(date) => date < new Date()}
+                      disabled={(date) => {
+                        const twoWeeksFromNow = new Date();
+                        twoWeeksFromNow.setDate(twoWeeksFromNow.getDate() + 14);
+                        return date < twoWeeksFromNow;
+                      }}
                       initialFocus
                       className="pointer-events-auto"
                     />
                   </PopoverContent>
                 </Popover>
+                <p className="text-xs text-thai-green/60">
+                  Minimum 2 semaines de préavis requis
+                </p>
               </div>
 
               {/* Nombre de personnes et budget */}
@@ -196,12 +258,12 @@ const Evenements = () => {
                   <Input
                     id="nombrePersonnes"
                     type="number"
-                    min="1"
+                    min="10"
                     value={formData.nombrePersonnes}
                     onChange={(e) => handleInputChange('nombrePersonnes', e.target.value)}
                     required
                     className="border-thai-orange/30 focus:border-thai-orange"
-                    placeholder="Ex: 25"
+                    placeholder="Minimum 10 personnes"
                   />
                 </div>
                 
@@ -218,35 +280,41 @@ const Evenements = () => {
               </div>
 
               {/* Sélection des plats */}
-              <div className="space-y-4">
-                <Label className="text-lg font-semibold text-thai-green">Sélectionnez les plats qui vous intéressent :</Label>
-                <div className="grid md:grid-cols-2 gap-3">
-                  {platsEvenements.map(plat => (
-                    <div key={plat.id} className="flex items-start space-x-3 p-3 border border-thai-orange/20 rounded-lg hover:bg-thai-cream/30 transition-colors">
-                      <Checkbox
-                        id={`plat-${plat.id}`}
-                        checked={platsSelectionnes.includes(plat.id)}
-                        onCheckedChange={() => togglePlatSelection(plat.id)}
-                        className="border-thai-orange data-[state=checked]:bg-thai-orange mt-1"
-                      />
-                      <div className="flex-1">
-                        <Label 
-                          htmlFor={`plat-${plat.id}`} 
-                          className="font-medium text-thai-green cursor-pointer"
-                        >
-                          {plat.nom}
-                        </Label>
-                        <p className="text-sm text-thai-green/70 mt-1">{plat.description}</p>
+              {plats.length > 0 && (
+                <div className="space-y-4">
+                  <Label className="text-lg font-semibold text-thai-green">
+                    Sélectionnez les plats qui vous intéressent :
+                  </Label>
+                  <div className="grid md:grid-cols-2 gap-3 max-h-60 overflow-y-auto">
+                    {plats.map(plat => (
+                      <div key={plat.id} className="flex items-start space-x-3 p-3 border border-thai-orange/20 rounded-lg hover:bg-thai-cream/30 transition-colors">
+                        <Checkbox
+                          id={`plat-${plat.id}`}
+                          checked={platsSelectionnes.includes(plat.id)}
+                          onCheckedChange={() => togglePlatSelection(plat.id)}
+                          className="border-thai-orange data-[state=checked]:bg-thai-orange mt-1"
+                        />
+                        <div className="flex-1">
+                          <Label 
+                            htmlFor={`plat-${plat.id}`} 
+                            className="font-medium text-thai-green cursor-pointer"
+                          >
+                            {plat.nom}
+                          </Label>
+                          {plat.description && (
+                            <p className="text-sm text-thai-green/70 mt-1">{plat.description}</p>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
+                  {platsSelectionnes.length > 0 && (
+                    <p className="text-sm text-thai-green/70">
+                      {platsSelectionnes.length} plat(s) sélectionné(s)
+                    </p>
+                  )}
                 </div>
-                {platsSelectionnes.length > 0 && (
-                  <p className="text-sm text-thai-green/70">
-                    {platsSelectionnes.length} plat(s) sélectionné(s)
-                  </p>
-                )}
-              </div>
+              )}
 
               {/* Demandes spéciales */}
               <div className="space-y-2">
@@ -277,10 +345,10 @@ const Evenements = () => {
 
               <Button 
                 type="submit" 
-                disabled={isLoading || !formData.nomEvenement || !formData.typeEvenement || !dateEvenement || !formData.nombrePersonnes}
+                disabled={createDemandeTraiteur.isPending || !formData.nomEvenement || !formData.typeEvenement || !dateEvenement || !formData.nombrePersonnes || !formData.contactEmail}
                 className="w-full bg-thai-orange hover:bg-thai-orange-dark text-white py-6 text-lg rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
               >
-                {isLoading ? 'Envoi en cours...' : 'Envoyer ma demande d\'événement'}
+                {createDemandeTraiteur.isPending ? 'Envoi en cours...' : 'Envoyer ma demande d\'événement'}
               </Button>
             </form>
           </CardContent>

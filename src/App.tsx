@@ -10,6 +10,7 @@ import Commander from "./pages/Commander";
 import Evenements from "./pages/Evenements";
 import Profil from "./pages/Profil";
 import AirtableTest from "./pages/AirtableTest";
+import AirtableConfig from "./components/AirtableConfig";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,6 +28,8 @@ const App = () => (
             <Route path="/commander" element={<Commander />} />
             <Route path="/evenements" element={<Evenements />} />
             <Route path="/profil" element={<Profil />} />
+            <Route path="/airtable-config" element={<AirtableConfig />} />
+            <Route path="/airtable-test" element={<AirtableTest />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

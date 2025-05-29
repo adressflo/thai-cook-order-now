@@ -42,13 +42,13 @@ export const useClients = () => {
   
   const clients: Client[] = data?.records.map(record => ({
     id: record.id,
-    nom: record.fields.Nom || '',
-    prenom: record.fields.Prenom || '',
-    email: record.fields.Email || '',
-    telephone: record.fields.Telephone,
-    adresse: record.fields.Adresse,
-    dateNaissance: record.fields['Date de naissance'],
-    preferences: record.fields.Preferences,
+    nom: record.fields.Nom || record.fields.nom || '',
+    prenom: record.fields.Prenom || record.fields.prenom || '',
+    email: record.fields.Email || record.fields.email || '',
+    telephone: record.fields.Telephone || record.fields.telephone,
+    adresse: record.fields.Adresse || record.fields.adresse,
+    dateNaissance: record.fields['Date de naissance'] || record.fields.dateNaissance,
+    preferences: record.fields.Preferences || record.fields.preferences,
     createdTime: record.createdTime
   })) || [];
 
@@ -60,12 +60,22 @@ export const usePlats = () => {
   
   const plats: Plat[] = data?.records.map(record => ({
     id: record.id,
-    nom: record.fields.Nom || '',
-    description: record.fields.Description,
-    prix: record.fields.Prix,
-    categorie: record.fields.Categorie,
-    ingredients: record.fields.Ingredients,
-    disponible: record.fields.Disponible !== false,
+    nom: record.fields.Nom || record.fields.nom || '',
+    description: record.fields.Description || record.fields.description,
+    prix: parseFloat(record.fields.Prix || record.fields.prix || 0),
+    categorie: record.fields.Categorie || record.fields.categorie,
+    ingredients: record.fields.Ingredients || record.fields.ingredients,
+    disponible: record.fields.Disponible !== false && record.fields.disponible !== false,
+    image: record.fields.Image || record.fields.image,
+    allergenes: record.fields.Allergenes || record.fields.allergenes,
+    // Disponibilité par jour selon le cahier des charges
+    lundi_dispo: record.fields.lundi_dispo || record.fields['Lundi Dispo'] || 'non',
+    mardi_dispo: record.fields.mardi_dispo || record.fields['Mardi Dispo'] || 'non',
+    mercredi_dispo: record.fields.mercredi_dispo || record.fields['Mercredi Dispo'] || 'non',
+    jeudi_dispo: record.fields.jeudi_dispo || record.fields['Jeudi Dispo'] || 'non',
+    vendredi_dispo: record.fields.vendredi_dispo || record.fields['Vendredi Dispo'] || 'non',
+    samedi_dispo: record.fields.samedi_dispo || record.fields['Samedi Dispo'] || 'non',
+    dimanche_dispo: record.fields.dimanche_dispo || record.fields['Dimanche Dispo'] || 'non',
     createdTime: record.createdTime
   })) || [];
 
@@ -94,6 +104,53 @@ export const useCreateClient = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['airtable', 'Client DB'] });
+    }
+  });
+};
+
+export const useCreateCommande = () => {
+  const { config } = useAirtableConfig();
+
+  return useMutation({
+    mutationFn: async (commandeData: any) => {
+      if (!config) throw new Error('Configuration Airtable manquante');
+      
+      const fields = {
+        'Client Email': commandeData.clientEmail,
+        'Plats': JSON.stringify(commandeData.panier),
+        'Total': parseFloat(commandeData.total),
+        'Date Retrait': commandeData.dateRetrait,
+        'Heure Retrait': commandeData.heureRetrait,
+        'Demandes Speciales': commandeData.demandesSpeciales,
+        'Statut': 'En Attente de Confirmation',
+        'Date Commande': new Date().toISOString()
+      };
+
+      return airtableService.createRecord({ ...config, tableName: 'Commandes' }, fields);
+    }
+  });
+};
+
+export const useCreateDemandeTraiteur = () => {
+  const { config } = useAirtableConfig();
+
+  return useMutation({
+    mutationFn: async (demandeData: any) => {
+      if (!config) throw new Error('Configuration Airtable manquante');
+      
+      const fields = {
+        'Nom Evenement': demandeData.nomEvenement,
+        'Type Evenement': demandeData.typeEvenement,
+        'Date Evenement': demandeData.dateEvenement,
+        'Nombre Personnes': parseInt(demandeData.nombrePersonnes),
+        'Budget': demandeData.budgetClient,
+        'Plats Selectionnes': JSON.stringify(demandeData.platsSelectionnes),
+        'Demandes Speciales': demandeData.demandesSpeciales,
+        'Statut': 'Nouvelle',
+        'Date Demande': new Date().toISOString()
+      };
+
+      return airtableService.createRecord({ ...config, tableName: 'Demandes Traiteur' }, fields);
     }
   });
 };

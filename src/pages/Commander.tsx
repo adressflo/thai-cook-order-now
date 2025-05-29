@@ -9,74 +9,17 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Calendar } from '@/components/ui/calendar';
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, Database, AlertCircle, Utensils } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-
-// Simulation de données de plats (à remplacer par les vraies données Airtable)
-const platsSimulation = [
-  {
-    id: 1,
-    nom: "Pad Thaï aux Crevettes",
-    description: "Nouilles de riz sautées aux crevettes, germes de soja, œuf et sauce tamarind",
-    prix: 14.50,
-    image: "https://images.unsplash.com/photo-1559847844-d418898f7c5c?w=300&h=200&fit=crop",
-    lundi_dispo: "oui",
-    mardi_dispo: "oui",
-    mercredi_dispo: "non",
-    jeudi_dispo: "oui",
-    vendredi_dispo: "oui",
-    samedi_dispo: "oui",
-    dimanche_dispo: "non"
-  },
-  {
-    id: 2,
-    nom: "Tom Yum Kung",
-    description: "Soupe épicée et acidulée aux crevettes, champignons et citronnelle",
-    prix: 12.00,
-    image: "https://images.unsplash.com/photo-1569058242253-92a9c755a0ec?w=300&h=200&fit=crop",
-    lundi_dispo: "oui",
-    mardi_dispo: "oui",
-    mercredi_dispo: "oui",
-    jeudi_dispo: "non",
-    vendredi_dispo: "oui",
-    samedi_dispo: "oui",
-    dimanche_dispo: "oui"
-  },
-  {
-    id: 3,
-    nom: "Curry Vert au Poulet",
-    description: "Curry traditionnel au lait de coco, basilic thaï et légumes",
-    prix: 13.80,
-    image: "https://images.unsplash.com/photo-1586190848861-99aa4a171e90?w=300&h=200&fit=crop",
-    lundi_dispo: "oui",
-    mardi_dispo: "non",
-    mercredi_dispo: "oui",
-    jeudi_dispo: "oui",
-    vendredi_dispo: "oui",
-    samedi_dispo: "oui",
-    dimanche_dispo: "oui"
-  },
-  {
-    id: 4,
-    nom: "Som Tam (Salade de Papaye)",
-    description: "Salade fraîche de papaye verte, tomates cerises, haricots verts et cacahuètes",
-    prix: 9.50,
-    image: "https://images.unsplash.com/photo-1596040033229-a40b85dee531?w=300&h=200&fit=crop",
-    lundi_dispo: "non",
-    mardi_dispo: "oui",
-    mercredi_dispo: "oui",
-    jeudi_dispo: "oui",
-    vendredi_dispo: "oui",
-    samedi_dispo: "oui",
-    dimanche_dispo: "non"
-  }
-];
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Link } from 'react-router-dom';
+import { usePlats, useAirtableConfig, useCreateCommande } from '@/hooks/useAirtable';
 
 interface PlatPanier {
-  id: number;
+  id: string;
   nom: string;
   prix: number;
   quantite: number;
@@ -84,12 +27,16 @@ interface PlatPanier {
 
 const Commander = () => {
   const { toast } = useToast();
+  const { config } = useAirtableConfig();
+  const { plats, isLoading: platsLoading, error: platsError } = usePlats();
+  const createCommande = useCreateCommande();
+  
   const [jourSelectionne, setJourSelectionne] = useState<string>('');
   const [panier, setPanier] = useState<PlatPanier[]>([]);
   const [dateRetrait, setDateRetrait] = useState<Date>();
   const [heureRetrait, setHeureRetrait] = useState<string>('');
   const [demandesSpeciales, setDemandesSpeciales] = useState<string>('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [clientEmail, setClientEmail] = useState<string>('');
 
   const jours = [
     { value: 'lundi', label: 'Lundi' },
@@ -106,13 +53,14 @@ const Commander = () => {
     '18:30', '19:00', '19:30', '20:00', '20:30', '21:00'
   ];
 
-  const platsDisponibles = platsSimulation.filter(plat => {
-    if (!jourSelectionne) return false;
+  // Filtrer les plats selon le jour sélectionné et les données Airtable
+  const platsDisponibles = plats.filter(plat => {
+    if (!jourSelectionne || !plat.disponible) return false;
     const cleDisponibilite = `${jourSelectionne}_dispo` as keyof typeof plat;
     return plat[cleDisponibilite] === 'oui';
   });
 
-  const ajouterAuPanier = (plat: typeof platsSimulation[0]) => {
+  const ajouterAuPanier = (plat: typeof plats[0]) => {
     setPanier(prev => {
       const platExistant = prev.find(p => p.id === plat.id);
       if (platExistant) {
@@ -122,7 +70,12 @@ const Commander = () => {
             : p
         );
       } else {
-        return [...prev, { id: plat.id, nom: plat.nom, prix: plat.prix, quantite: 1 }];
+        return [...prev, { 
+          id: plat.id, 
+          nom: plat.nom, 
+          prix: plat.prix || 0, 
+          quantite: 1 
+        }];
       }
     });
     
@@ -132,7 +85,7 @@ const Commander = () => {
     });
   };
 
-  const modifierQuantite = (id: number, nouvelleQuantite: number) => {
+  const modifierQuantite = (id: string, nouvelleQuantite: number) => {
     if (nouvelleQuantite === 0) {
       setPanier(prev => prev.filter(p => p.id !== id));
     } else {
@@ -158,38 +111,27 @@ const Commander = () => {
       return;
     }
 
-    if (!dateRetrait || !heureRetrait) {
+    if (!dateRetrait || !heureRetrait || !clientEmail) {
       toast({
         title: "Informations manquantes",
-        description: "Veuillez sélectionner une date et heure de retrait.",
+        description: "Veuillez remplir tous les champs obligatoires.",
         variant: "destructive",
       });
       return;
     }
 
-    setIsLoading(true);
-    
     try {
-      const commande = {
-        panier: panier,
-        dateRetrait: dateRetrait,
-        heureRetrait: heureRetrait,
-        demandesSpeciales: demandesSpeciales,
-        total: calculerTotal(),
-        timestamp: new Date().toISOString()
-      };
-
-      console.log('Commande envoyée vers n8n:', commande);
-      
-      // Ici, vous ajouterez l'appel réel vers votre webhook n8n
-      // const response = await fetch('VOTRE_WEBHOOK_N8N_COMMANDE_URL', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(commande)
-      // });
+      await createCommande.mutateAsync({
+        clientEmail,
+        panier,
+        dateRetrait: dateRetrait.toISOString(),
+        heureRetrait,
+        demandesSpeciales,
+        total: calculerTotal()
+      });
       
       toast({
-        title: "Commande confirmée !",
+        title: "Commande envoyée !",
         description: `Votre commande de ${calculerTotal()}€ a été enregistrée. Vous recevrez une confirmation par email.`,
       });
       
@@ -198,6 +140,7 @@ const Commander = () => {
       setDateRetrait(undefined);
       setHeureRetrait('');
       setDemandesSpeciales('');
+      setClientEmail('');
       
     } catch (error) {
       toast({
@@ -205,20 +148,57 @@ const Commander = () => {
         description: "Une erreur est survenue lors de l'envoi de votre commande.",
         variant: "destructive",
       });
-    } finally {
-      setIsLoading(false);
     }
   };
+
+  // Configuration Airtable manquante
+  if (!config) {
+    return (
+      <div className="min-h-screen bg-gradient-thai py-8 px-4">
+        <div className="container mx-auto max-w-2xl">
+          <Alert className="border-amber-200 bg-amber-50">
+            <Database className="h-4 w-4 text-amber-600" />
+            <AlertDescription className="text-amber-800">
+              <strong>Configuration requise :</strong> Veuillez d'abord configurer votre connexion Airtable pour accéder aux menus.
+            </AlertDescription>
+          </Alert>
+          <div className="text-center mt-6">
+            <Link to="/airtable-config">
+              <Button className="bg-thai-orange hover:bg-thai-orange-dark">
+                Configurer Airtable
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-thai py-8 px-4">
       <div className="container mx-auto max-w-4xl">
         <Card className="shadow-xl border-thai-orange/20 mb-8">
           <CardHeader className="text-center bg-gradient-to-r from-thai-orange to-thai-gold text-white rounded-t-lg">
-            <CardTitle className="text-3xl font-bold">Commander à la Carte</CardTitle>
+            <div className="flex items-center justify-center mb-2">
+              <Utensils className="h-8 w-8 mr-2" />
+              <CardTitle className="text-3xl font-bold">Commander à la Carte</CardTitle>
+            </div>
+            <p className="text-white/90">
+              Découvrez notre cuisine thaïlandaise authentique d'Isan
+            </p>
           </CardHeader>
           
           <CardContent className="p-8">
+            {/* Gestion des erreurs */}
+            {platsError && (
+              <Alert className="mb-6 border-red-200 bg-red-50">
+                <AlertCircle className="h-4 w-4 text-red-600" />
+                <AlertDescription className="text-red-800">
+                  Erreur lors du chargement des plats. Vérifiez votre configuration Airtable.
+                </AlertDescription>
+              </Alert>
+            )}
+
             {/* Sélection du jour */}
             <div className="mb-8">
               <Label className="text-lg font-semibold text-thai-green mb-4 block">
@@ -245,27 +225,52 @@ const Commander = () => {
                   Plats disponibles le {jours.find(j => j.value === jourSelectionne)?.label.toLowerCase()} :
                 </h3>
                 
-                {platsDisponibles.length === 0 ? (
-                  <p className="text-thai-green/70 text-center py-8">
-                    Aucun plat disponible ce jour-là. Veuillez choisir un autre jour.
-                  </p>
+                {platsLoading ? (
+                  <div className="text-center py-8">
+                    <p className="text-thai-green/70">Chargement des plats...</p>
+                  </div>
+                ) : platsDisponibles.length === 0 ? (
+                  <div className="text-center py-8 bg-thai-cream/30 rounded-lg">
+                    <p className="text-thai-green/70">
+                      Aucun plat disponible ce jour-là ou aucune donnée trouvée. 
+                      {plats.length === 0 && " Vérifiez votre configuration Airtable."}
+                    </p>
+                  </div>
                 ) : (
                   <div className="grid md:grid-cols-2 gap-6">
                     {platsDisponibles.map(plat => (
                       <Card key={plat.id} className="border-thai-orange/20 hover:shadow-lg transition-shadow duration-300">
-                        <div className="aspect-video overflow-hidden rounded-t-lg">
-                          <img 
-                            src={plat.image} 
-                            alt={plat.nom}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
+                        {plat.image && (
+                          <div className="aspect-video overflow-hidden rounded-t-lg">
+                            <img 
+                              src={plat.image} 
+                              alt={plat.nom}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                // Image de fallback si l'URL est cassée
+                                (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1562565652-a0d8f0c59eb4?w=400&h=300&fit=crop";
+                              }}
+                            />
+                          </div>
+                        )}
                         <CardContent className="p-4">
                           <h4 className="font-semibold text-thai-green mb-2">{plat.nom}</h4>
-                          <p className="text-sm text-thai-green/70 mb-3">{plat.description}</p>
+                          {plat.description && (
+                            <p className="text-sm text-thai-green/70 mb-3">{plat.description}</p>
+                          )}
+                          {plat.ingredients && (
+                            <p className="text-xs text-thai-green/60 mb-2">
+                              <strong>Ingrédients :</strong> {plat.ingredients}
+                            </p>
+                          )}
+                          {plat.allergenes && (
+                            <p className="text-xs text-red-600 mb-3">
+                              <strong>Allergènes :</strong> {plat.allergenes}
+                            </p>
+                          )}
                           <div className="flex items-center justify-between">
                             <Badge variant="secondary" className="bg-thai-gold/20 text-thai-green">
-                              {plat.prix.toFixed(2)}€
+                              {(plat.prix || 0).toFixed(2)}€
                             </Badge>
                             <Button 
                               onClick={() => ajouterAuPanier(plat)}
@@ -327,6 +332,17 @@ const Commander = () => {
               <div className="space-y-6">
                 <h3 className="text-xl font-semibold text-thai-green">Informations de retrait :</h3>
                 
+                <div className="space-y-2">
+                  <Label className="text-thai-green font-medium">Email *</Label>
+                  <Input
+                    type="email"
+                    value={clientEmail}
+                    onChange={(e) => setClientEmail(e.target.value)}
+                    placeholder="votre.email@example.com"
+                    className="border-thai-orange/30 focus:border-thai-orange"
+                  />
+                </div>
+                
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="text-thai-green font-medium">Date de retrait *</Label>
@@ -382,12 +398,20 @@ const Commander = () => {
                   />
                 </div>
 
+                <div className="bg-thai-cream/30 p-4 rounded-lg">
+                  <p className="text-sm text-thai-green/80">
+                    <strong>📍 Adresse de retrait :</strong><br />
+                    2 impasse de la poste, 37120 Marigny-Marmande, France<br />
+                    <strong>📞 Contact :</strong> 07 49 28 37 07
+                  </p>
+                </div>
+
                 <Button 
                   onClick={validerCommande}
-                  disabled={isLoading}
+                  disabled={createCommande.isPending}
                   className="w-full bg-thai-orange hover:bg-thai-orange-dark text-white py-6 text-lg rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
                 >
-                  {isLoading ? 'Validation...' : `Valider ma commande (${calculerTotal()}€)`}
+                  {createCommande.isPending ? 'Envoi...' : `Valider ma commande (${calculerTotal()}€)`}
                 </Button>
               </div>
             )}
