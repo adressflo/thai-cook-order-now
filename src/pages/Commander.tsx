@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -28,7 +27,7 @@ interface PlatPanier {
 const Commander = () => {
   const { toast } = useToast();
   const { config } = useAirtableConfig();
-  const { plats, isLoading: platsLoading, error: platsError } = usePlats();
+  const { plats, getPlatsDisponibles, isLoading: platsLoading, error: platsError } = usePlats();
   const createCommande = useCreateCommande();
   
   const [jourSelectionne, setJourSelectionne] = useState<string>('');
@@ -38,14 +37,15 @@ const Commander = () => {
   const [demandesSpeciales, setDemandesSpeciales] = useState<string>('');
   const [clientEmail, setClientEmail] = useState<string>('');
 
+  // Jours selon la structure exacte des champs Airtable
   const jours = [
-    { value: 'lundi', label: 'Lundi' },
-    { value: 'mardi', label: 'Mardi' },
-    { value: 'mercredi', label: 'Mercredi' },
-    { value: 'jeudi', label: 'Jeudi' },
-    { value: 'vendredi', label: 'Vendredi' },
-    { value: 'samedi', label: 'Samedi' },
-    { value: 'dimanche', label: 'Dimanche' }
+    { value: 'lundi', label: 'Lundi', champ: 'lundiDispo' },
+    { value: 'mardi', label: 'Mardi', champ: 'mardiDispo' },
+    { value: 'mercredi', label: 'Mercredi', champ: 'mercrediDispo' },
+    { value: 'jeudi', label: 'Jeudi', champ: 'jeudiDispo' },
+    { value: 'vendredi', label: 'Vendredi', champ: 'vendrediDispo' },
+    { value: 'samedi', label: 'Samedi', champ: 'samediDispo' },
+    { value: 'dimanche', label: 'Dimanche', champ: 'dimancheDispo' }
   ];
 
   const heuresDisponibles = [
@@ -53,12 +53,8 @@ const Commander = () => {
     '18:30', '19:00', '19:30', '20:00', '20:30', '21:00'
   ];
 
-  // Filtrer les plats selon le jour sélectionné et les données Airtable
-  const platsDisponibles = plats.filter(plat => {
-    if (!jourSelectionne || !plat.disponible) return false;
-    const cleDisponibilite = `${jourSelectionne}_dispo` as keyof typeof plat;
-    return plat[cleDisponibilite] === 'oui';
-  });
+  // Utilisation de la nouvelle méthode de filtrage
+  const platsDisponibles = getPlatsDisponibles(jourSelectionne);
 
   const ajouterAuPanier = (plat: typeof plats[0]) => {
     setPanier(prev => {
@@ -72,7 +68,7 @@ const Commander = () => {
       } else {
         return [...prev, { 
           id: plat.id, 
-          nom: plat.nom, 
+          nom: plat.plat, // Utilisation du champ principal "Plat"
           prix: plat.prix || 0, 
           quantite: 1 
         }];
@@ -81,7 +77,7 @@ const Commander = () => {
     
     toast({
       title: "Plat ajouté !",
-      description: `${plat.nom} a été ajouté à votre panier.`,
+      description: `${plat.plat} a été ajouté à votre panier.`,
     });
   };
 
@@ -121,13 +117,16 @@ const Commander = () => {
     }
 
     try {
+      // Formatage de la date selon le format Airtable
+      const dateHeureRetrait = new Date(dateRetrait);
+      const [heures, minutes] = heureRetrait.split(':');
+      dateHeureRetrait.setHours(parseInt(heures), parseInt(minutes));
+
       await createCommande.mutateAsync({
         clientEmail,
         panier,
-        dateRetrait: dateRetrait.toISOString(),
-        heureRetrait,
-        demandesSpeciales,
-        total: calculerTotal()
+        dateHeureRetrait: dateHeureRetrait.toISOString(),
+        demandesSpeciales
       });
       
       toast({
@@ -145,7 +144,7 @@ const Commander = () => {
     } catch (error) {
       toast({
         title: "Erreur",
-        description: "Une erreur est survenue lors de l'envoi de votre commande.",
+        description: error instanceof Error ? error.message : "Une erreur est survenue lors de l'envoi de votre commande.",
         variant: "destructive",
       });
     }
@@ -218,7 +217,7 @@ const Commander = () => {
               </Select>
             </div>
 
-            {/* Affichage des plats disponibles */}
+            {/* Affichage des plats selon structure Plats DB */}
             {jourSelectionne && (
               <div className="mb-8">
                 <h3 className="text-xl font-semibold text-thai-green mb-4">
@@ -232,45 +231,33 @@ const Commander = () => {
                 ) : platsDisponibles.length === 0 ? (
                   <div className="text-center py-8 bg-thai-cream/30 rounded-lg">
                     <p className="text-thai-green/70">
-                      Aucun plat disponible ce jour-là ou aucune donnée trouvée. 
-                      {plats.length === 0 && " Vérifiez votre configuration Airtable."}
+                      Aucun plat disponible ce jour-là. Essayez un autre jour !
                     </p>
                   </div>
                 ) : (
                   <div className="grid md:grid-cols-2 gap-6">
                     {platsDisponibles.map(plat => (
                       <Card key={plat.id} className="border-thai-orange/20 hover:shadow-lg transition-shadow duration-300">
-                        {plat.image && (
+                        {plat.photoDuPlat && (
                           <div className="aspect-video overflow-hidden rounded-t-lg">
                             <img 
-                              src={plat.image} 
-                              alt={plat.nom}
+                              src={plat.photoDuPlat} 
+                              alt={plat.plat}
                               className="w-full h-full object-cover"
                               onError={(e) => {
-                                // Image de fallback si l'URL est cassée
                                 (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1562565652-a0d8f0c59eb4?w=400&h=300&fit=crop";
                               }}
                             />
                           </div>
                         )}
                         <CardContent className="p-4">
-                          <h4 className="font-semibold text-thai-green mb-2">{plat.nom}</h4>
+                          <h4 className="font-semibold text-thai-green mb-2">{plat.plat}</h4>
                           {plat.description && (
                             <p className="text-sm text-thai-green/70 mb-3">{plat.description}</p>
                           )}
-                          {plat.ingredients && (
-                            <p className="text-xs text-thai-green/60 mb-2">
-                              <strong>Ingrédients :</strong> {plat.ingredients}
-                            </p>
-                          )}
-                          {plat.allergenes && (
-                            <p className="text-xs text-red-600 mb-3">
-                              <strong>Allergènes :</strong> {plat.allergenes}
-                            </p>
-                          )}
                           <div className="flex items-center justify-between">
                             <Badge variant="secondary" className="bg-thai-gold/20 text-thai-green">
-                              {(plat.prix || 0).toFixed(2)}€
+                              {plat.prixVu || `${(plat.prix || 0).toFixed(2)}€`}
                             </Badge>
                             <Button 
                               onClick={() => ajouterAuPanier(plat)}
@@ -341,6 +328,9 @@ const Commander = () => {
                     placeholder="votre.email@example.com"
                     className="border-thai-orange/30 focus:border-thai-orange"
                   />
+                  <p className="text-xs text-thai-green/60">
+                    Utilisez l'email de votre profil client
+                  </p>
                 </div>
                 
                 <div className="grid md:grid-cols-2 gap-4">

@@ -9,69 +9,94 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { Calendar } from '@/components/ui/calendar';
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, User } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { useCreateClient } from '@/hooks/useAirtable';
 
 const Profil = () => {
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
+  const createClient = useCreateClient();
   const [birthDate, setBirthDate] = useState<Date>();
   
+  // Formulaire basé sur la structure exacte de Client DB
   const [formData, setFormData] = useState({
     nom: '',
     prenom: '',
-    preference: '',
-    telephone: '',
+    preferenceClient: '',
+    numeroTelephone: '',
     email: '',
-    adresse: '',
+    adresseNumeroRue: '',
     codePostal: '',
     ville: '',
-    commentConnu: '',
-    newsletter: false,
-    demandesSpeciales: ''
+    commentConnuChanthana: [] as string[],
+    newsletterActualites: false
   });
 
-  const handleInputChange = (field: string, value: string | boolean) => {
+  // Options selon le cahier des charges exact
+  const optionsCommentConnu = [
+    'Bouche à oreille',
+    'Réseaux sociaux',
+    'Recherche Google',
+    'En passant devant',
+    'Recommandation d\'un ami',
+    'Autre'
+  ];
+
+  const handleInputChange = (field: string, value: string | boolean | string[]) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }));
   };
 
+  const handleCommentConnuChange = (option: string, checked: boolean) => {
+    setFormData(prev => ({
+      ...prev,
+      commentConnuChanthana: checked 
+        ? [...prev.commentConnuChanthana, option]
+        : prev.commentConnuChanthana.filter(item => item !== option)
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     
     try {
-      // Simulation d'envoi vers webhook n8n
-      console.log('Données envoyées vers n8n:', {
+      await createClient.mutateAsync({
         ...formData,
-        dateNaissance: birthDate,
-        timestamp: new Date().toISOString()
+        codePostal: formData.codePostal ? parseInt(formData.codePostal) : undefined,
+        dateNaissance: birthDate?.toISOString().split('T')[0] // Format JJ/MM/AAAA sera géré par Airtable
       });
-      
-      // Ici, vous ajouterez l'appel réel vers votre webhook n8n
-      // const response = await fetch('VOTRE_WEBHOOK_N8N_URL', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ ...formData, dateNaissance: birthDate })
-      // });
       
       toast({
-        title: "Profil mis à jour avec succès !",
-        description: "Vos informations ont été sauvegardées.",
+        title: "Profil créé avec succès !",
+        description: "Vos informations ont été enregistrées dans notre base de données.",
       });
+
+      // Réinitialiser le formulaire
+      setFormData({
+        nom: '',
+        prenom: '',
+        preferenceClient: '',
+        numeroTelephone: '',
+        email: '',
+        adresseNumeroRue: '',
+        codePostal: '',
+        ville: '',
+        commentConnuChanthana: [],
+        newsletterActualites: false
+      });
+      setBirthDate(undefined);
+      
     } catch (error) {
       toast({
         title: "Erreur",
-        description: "Une erreur est survenue lors de la sauvegarde.",
+        description: error instanceof Error ? error.message : "Une erreur est survenue lors de la création du profil.",
         variant: "destructive",
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -80,15 +105,18 @@ const Profil = () => {
       <div className="container mx-auto max-w-2xl">
         <Card className="shadow-xl border-thai-orange/20">
           <CardHeader className="text-center bg-gradient-to-r from-thai-orange to-thai-gold text-white rounded-t-lg">
-            <CardTitle className="text-3xl font-bold">Mon Profil</CardTitle>
+            <div className="flex items-center justify-center mb-2">
+              <User className="h-8 w-8 mr-2" />
+              <CardTitle className="text-3xl font-bold">Mon Profil</CardTitle>
+            </div>
             <CardDescription className="text-white/90">
-              Gérez vos informations personnelles et préférences
+              Créez votre profil client pour passer commande facilement
             </CardDescription>
           </CardHeader>
           
           <CardContent className="p-8">
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Informations personnelles */}
+              {/* Informations personnelles selon structure Client DB */}
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="nom" className="text-thai-green font-medium">Nom *</Label>
@@ -126,25 +154,26 @@ const Profil = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="telephone" className="text-thai-green font-medium">Téléphone</Label>
+                  <Label htmlFor="numeroTelephone" className="text-thai-green font-medium">Numéro de téléphone</Label>
                   <Input
-                    id="telephone"
-                    value={formData.telephone}
-                    onChange={(e) => handleInputChange('telephone', e.target.value)}
+                    id="numeroTelephone"
+                    type="tel"
+                    value={formData.numeroTelephone}
+                    onChange={(e) => handleInputChange('numeroTelephone', e.target.value)}
                     className="border-thai-orange/30 focus:border-thai-orange"
                   />
                 </div>
               </div>
 
-              {/* Adresse */}
+              {/* Adresse selon structure exacte */}
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="adresse" className="text-thai-green font-medium">Adresse</Label>
+                  <Label htmlFor="adresseNumeroRue" className="text-thai-green font-medium">Adresse (numéro et rue)</Label>
                   <Input
-                    id="adresse"
-                    value={formData.adresse}
-                    onChange={(e) => handleInputChange('adresse', e.target.value)}
-                    placeholder="Numéro et rue"
+                    id="adresseNumeroRue"
+                    value={formData.adresseNumeroRue}
+                    onChange={(e) => handleInputChange('adresseNumeroRue', e.target.value)}
+                    placeholder="12 rue de la Paix"
                     className="border-thai-orange/30 focus:border-thai-orange"
                   />
                 </div>
@@ -153,6 +182,7 @@ const Profil = () => {
                     <Label htmlFor="codePostal" className="text-thai-green font-medium">Code Postal</Label>
                     <Input
                       id="codePostal"
+                      type="number"
                       value={formData.codePostal}
                       onChange={(e) => handleInputChange('codePostal', e.target.value)}
                       className="border-thai-orange/30 focus:border-thai-orange"
@@ -199,74 +229,58 @@ const Profil = () => {
                 </Popover>
               </div>
 
-              {/* Préférences */}
+              {/* Préférences client (allergies, végan, etc.) */}
               <div className="space-y-2">
-                <Label htmlFor="preference" className="text-thai-green font-medium">Préférences alimentaires</Label>
-                <Select value={formData.preference} onValueChange={(value) => handleInputChange('preference', value)}>
-                  <SelectTrigger className="border-thai-orange/30 focus:border-thai-orange">
-                    <SelectValue placeholder="Sélectionnez vos préférences" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white z-50">
-                    <SelectItem value="aucune">Aucune restriction</SelectItem>
-                    <SelectItem value="vegetarien">Végétarien</SelectItem>
-                    <SelectItem value="vegan">Vegan</SelectItem>
-                    <SelectItem value="sans-gluten">Sans gluten</SelectItem>
-                    <SelectItem value="halal">Halal</SelectItem>
-                    <SelectItem value="autre">Autre (préciser en commentaire)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Comment nous avez-vous connu */}
-              <div className="space-y-2">
-                <Label htmlFor="commentConnu" className="text-thai-green font-medium">Comment nous avez-vous connu ?</Label>
-                <Select value={formData.commentConnu} onValueChange={(value) => handleInputChange('commentConnu', value)}>
-                  <SelectTrigger className="border-thai-orange/30 focus:border-thai-orange">
-                    <SelectValue placeholder="Sélectionnez une option" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white z-50">
-                    <SelectItem value="bouche-oreille">Bouche à oreille</SelectItem>
-                    <SelectItem value="reseaux-sociaux">Réseaux sociaux</SelectItem>
-                    <SelectItem value="google">Recherche Google</SelectItem>
-                    <SelectItem value="passage">En passant devant</SelectItem>
-                    <SelectItem value="ami">Recommandation d'un ami</SelectItem>
-                    <SelectItem value="autre">Autre</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Demandes spéciales */}
-              <div className="space-y-2">
-                <Label htmlFor="demandesSpeciales" className="text-thai-green font-medium">Demandes spéciales ou commentaires</Label>
+                <Label htmlFor="preferenceClient" className="text-thai-green font-medium">Préférence client</Label>
                 <Textarea
-                  id="demandesSpeciales"
-                  value={formData.demandesSpeciales}
-                  onChange={(e) => handleInputChange('demandesSpeciales', e.target.value)}
+                  id="preferenceClient"
+                  value={formData.preferenceClient}
+                  onChange={(e) => handleInputChange('preferenceClient', e.target.value)}
                   rows={3}
                   className="border-thai-orange/30 focus:border-thai-orange"
-                  placeholder="Allergies, préférences particulières, commentaires..."
+                  placeholder="Allergies récurrentes, si vous êtes végan, votre plat préféré, ou toute autre note spécifique..."
                 />
+              </div>
+
+              {/* Comment nous avez-vous connu (choix multiples) */}
+              <div className="space-y-3">
+                <Label className="text-thai-green font-medium">Comment avez-vous connu ChanthanaThaiCook ?</Label>
+                <div className="grid md:grid-cols-2 gap-3">
+                  {optionsCommentConnu.map((option) => (
+                    <div key={option} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`connu-${option}`}
+                        checked={formData.commentConnuChanthana.includes(option)}
+                        onCheckedChange={(checked) => handleCommentConnuChange(option, checked as boolean)}
+                        className="border-thai-orange data-[state=checked]:bg-thai-orange"
+                      />
+                      <Label htmlFor={`connu-${option}`} className="text-sm text-thai-green">
+                        {option}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               {/* Newsletter */}
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="newsletter"
-                  checked={formData.newsletter}
-                  onCheckedChange={(checked) => handleInputChange('newsletter', checked as boolean)}
+                  checked={formData.newsletterActualites}
+                  onCheckedChange={(checked) => handleInputChange('newsletterActualites', checked as boolean)}
                   className="border-thai-orange data-[state=checked]:bg-thai-orange"
                 />
                 <Label htmlFor="newsletter" className="text-thai-green text-sm">
-                  Je souhaite recevoir les actualités et offres spéciales par email
+                  Souhaitez-vous recevoir les actualités et offres par e-mail ?
                 </Label>
               </div>
 
               <Button 
                 type="submit" 
-                disabled={isLoading}
+                disabled={createClient.isPending || !formData.nom || !formData.prenom || !formData.email}
                 className="w-full bg-thai-orange hover:bg-thai-orange-dark text-white py-6 text-lg rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
               >
-                {isLoading ? 'Sauvegarde...' : 'Sauvegarder mon profil'}
+                {createClient.isPending ? 'Création...' : 'Créer mon profil client'}
               </Button>
             </form>
           </CardContent>
