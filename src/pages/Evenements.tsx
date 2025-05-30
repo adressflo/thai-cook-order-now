@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,6 +24,7 @@ const Evenements = () => {
   
   const [formData, setFormData] = useState({
     nomEvenement: '',
+    contactEmail: '',
     typeEvenement: '',
     nombrePersonnes: '',
     budgetClient: '',
@@ -75,6 +77,7 @@ const Evenements = () => {
       // Reset form
       setFormData({
         nomEvenement: '',
+        contactEmail: '',
         typeEvenement: '',
         nombrePersonnes: '',
         budgetClient: '',
@@ -115,6 +118,19 @@ const Evenements = () => {
                   id="nomEvenement"
                   value={formData.nomEvenement}
                   onChange={(e) => handleInputChange('nomEvenement', e.target.value)}
+                  required
+                  className="border-thai-orange/30 focus:border-thai-orange"
+                />
+              </div>
+
+              {/* Email contact */}
+              <div className="space-y-2">
+                <Label htmlFor="contactEmail" className="text-thai-green font-medium">Email contact *</Label>
+                <Input
+                  id="contactEmail"
+                  type="email"
+                  value={formData.contactEmail}
+                  onChange={(e) => handleInputChange('contactEmail', e.target.value)}
                   required
                   className="border-thai-orange/30 focus:border-thai-orange"
                 />
@@ -231,7 +247,7 @@ const Evenements = () => {
 
               <Button 
                 type="submit" 
-                disabled={createEvenement.isPending || !formData.nomEvenement || !formData.typeEvenement || !dateEvenement}
+                disabled={createEvenement.isPending || !formData.nomEvenement || !formData.contactEmail || !formData.typeEvenement || !dateEvenement}
                 className="w-full bg-thai-orange hover:bg-thai-orange-dark text-white py-6 text-lg rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
               >
                 {createEvenement.isPending ? 'Envoi...' : 'Envoyer ma demande d\'événement'}

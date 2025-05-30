@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -102,6 +103,15 @@ const Profil = () => {
   return (
     <div className="min-h-screen bg-gradient-thai py-8 px-4">
       <div className="container mx-auto max-w-2xl">
+        {/* Photo Client en haut */}
+        <div className="text-center mb-8">
+          <img 
+            src="/lovable-uploads/7dca2e51-98dd-4f91-a1a5-5f636ab9fcb1.png" 
+            alt="Photo Client"
+            className="w-24 h-24 mx-auto mb-4 rounded-full shadow-xl"
+          />
+        </div>
+
         <Card className="shadow-xl border-thai-orange/20">
           <CardHeader className="text-center bg-gradient-to-r from-thai-orange to-thai-gold text-white rounded-t-lg">
             <div className="flex items-center justify-center mb-2">

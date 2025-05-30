@@ -23,21 +23,21 @@ const TableauDeBord = () => {
     {
       title: "Nous Trouver",
       description: "Venez nous rendre visite à Marigny-Marmande",
-      image: "https://images.unsplash.com/photo-1551218808-94e220e084d2?w=400&h=300&fit=crop",
+      image: "/lovable-uploads/c05e254c-51c0-4574-b2ab-2dac828ea413.png",
       link: "/nous-trouver",
       icon: MapPin
     },
     {
       title: "Mon Profil",
       description: "Gérez vos informations personnelles et préférences",
-      image: "https://images.unsplash.com/photo-1500673922987-e212871fec22?w=400&h=300&fit=crop",
+      image: "/lovable-uploads/7dca2e51-98dd-4f91-a1a5-5f636ab9fcb1.png",
       link: "/profil",
       icon: User
     },
     {
       title: "À propos de nous",
       description: "Découvrez notre histoire et notre passion",
-      image: "https://images.unsplash.com/photo-1721322800607-8c38375eef04?w=400&h=300&fit=crop",
+      image: "/lovable-uploads/ac918784-d65c-427a-9316-7598173177dd.png",
       link: "/a-propos",
       icon: Users
     }
