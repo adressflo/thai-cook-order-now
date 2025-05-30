@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Menu, Settings } from 'lucide-react';
+import { Menu, Settings, Shield } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const Header = () => {
@@ -50,6 +50,18 @@ const Header = () => {
               </Link>
             ))}
             <Link
+              to="/admin"
+              className={cn(
+                "px-3 py-2 rounded-lg transition-all duration-200 text-sm",
+                isActive('/admin') || location.pathname.startsWith('/admin')
+                  ? "bg-thai-green text-white"
+                  : "text-thai-green/70 hover:bg-thai-green/10 hover:text-thai-green"
+              )}
+              title="Administration"
+            >
+              <Shield className="h-4 w-4" />
+            </Link>
+            <Link
               to="/airtable-config"
               className={cn(
                 "px-3 py-2 rounded-lg transition-all duration-200 text-sm",
@@ -93,6 +105,19 @@ const Header = () => {
                   {item.name}
                 </Link>
               ))}
+              <Link
+                to="/admin"
+                className={cn(
+                  "px-4 py-3 rounded-lg transition-all duration-200 text-sm flex items-center space-x-2",
+                  isActive('/admin') || location.pathname.startsWith('/admin')
+                    ? "bg-thai-green text-white"
+                    : "text-thai-green/70 hover:bg-thai-green/10"
+                )}
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <Shield className="h-4 w-4" />
+                <span>Administration</span>
+              </Link>
               <Link
                 to="/airtable-config"
                 className={cn(

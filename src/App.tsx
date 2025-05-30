@@ -11,6 +11,9 @@ import Evenements from "./pages/Evenements";
 import Profil from "./pages/Profil";
 import AirtableTest from "./pages/AirtableTest";
 import AirtableConfig from "./components/AirtableConfig";
+import Admin from "./pages/Admin";
+import AdminCommandes from "./pages/AdminCommandes";
+import AdminCommandeDetail from "./pages/AdminCommandeDetail";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +33,9 @@ const App = () => (
             <Route path="/profil" element={<Profil />} />
             <Route path="/airtable-config" element={<AirtableConfig />} />
             <Route path="/airtable-test" element={<AirtableTest />} />
+            <Route path="/admin" element={<Admin />} />
+            <Route path="/admin/commandes" element={<AdminCommandes />} />
+            <Route path="/admin/commandes/:id" element={<AdminCommandeDetail />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
