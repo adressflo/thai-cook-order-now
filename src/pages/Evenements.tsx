@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,12 +11,14 @@ import { Calendar } from '@/components/ui/calendar';
 import { CalendarIcon } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { fr, enUS, th } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { usePlats, useCreateEvenement } from '@/hooks/useAirtable';
+import { useTranslation } from 'react-i18next';
 
-const Evenements = () => {
+const Evenements = memo(() => {
   const { toast } = useToast();
+  const { t, i18n } = useTranslation();
   const { plats, isLoading: platsLoading } = usePlats();
   const createEvenement = useCreateEvenement();
   const [dateEvenement, setDateEvenement] = useState<Date>();
@@ -30,6 +32,14 @@ const Evenements = () => {
     budgetClient: '',
     demandesSpeciales: ''
   });
+
+  const getDateLocale = () => {
+    switch (i18n.language) {
+      case 'en': return enUS;
+      case 'th': return th;
+      default: return fr;
+    }
+  };
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
@@ -53,8 +63,7 @@ const Evenements = () => {
     
     if (!dateEvenement) {
       toast({
-        title: "Date manquante",
-        description: "Veuillez sélectionner une date pour votre événement.",
+        title: t('events.toasts.missingDate'),
         variant: "destructive",
       });
       return;
@@ -70,8 +79,7 @@ const Evenements = () => {
       });
       
       toast({
-        title: "Demande envoyée !",
-        description: "Votre demande d'événement a été enregistrée. Nous vous recontacterons rapidement.",
+        title: t('events.toasts.success'),
       });
       
       // Reset form
@@ -88,8 +96,7 @@ const Evenements = () => {
       
     } catch (error) {
       toast({
-        title: "Erreur",
-        description: error instanceof Error ? error.message : "Une erreur est survenue lors de l'envoi de votre demande.",
+        title: t('events.toasts.error'),
         variant: "destructive",
       });
     }
@@ -102,10 +109,10 @@ const Evenements = () => {
           <CardHeader className="text-center bg-gradient-to-r from-thai-orange to-thai-gold text-white rounded-t-lg">
             <div className="flex items-center justify-center mb-2">
               <Calendar className="h-8 w-8 mr-2" />
-              <CardTitle className="text-3xl font-bold">Pour vos Événements</CardTitle>
+              <CardTitle className="text-3xl font-bold">{t('events.title')}</CardTitle>
             </div>
             <CardDescription className="text-white/90">
-              Organisez vos événements avec nos menus personnalisés pour groupes
+              {t('events.subtitle')}
             </CardDescription>
           </CardHeader>
           
@@ -113,7 +120,9 @@ const Evenements = () => {
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Nom de l'événement */}
               <div className="space-y-2">
-                <Label htmlFor="nomEvenement" className="text-thai-green font-medium">Nom de l'événement *</Label>
+                <Label htmlFor="nomEvenement" className="text-thai-green font-medium">
+                  {t('events.form.eventName')} {t('common.required')}
+                </Label>
                 <Input
                   id="nomEvenement"
                   value={formData.nomEvenement}
@@ -125,7 +134,9 @@ const Evenements = () => {
 
               {/* Email contact */}
               <div className="space-y-2">
-                <Label htmlFor="contactEmail" className="text-thai-green font-medium">Email contact *</Label>
+                <Label htmlFor="contactEmail" className="text-thai-green font-medium">
+                  {t('events.form.contactEmail')} {t('common.required')}
+                </Label>
                 <Input
                   id="contactEmail"
                   type="email"
@@ -138,23 +149,27 @@ const Evenements = () => {
 
               {/* Type d'événement */}
               <div className="space-y-2">
-                <Label htmlFor="typeEvenement" className="text-thai-green font-medium">Type d'événement *</Label>
+                <Label htmlFor="typeEvenement" className="text-thai-green font-medium">
+                  {t('events.form.eventType')} {t('common.required')}
+                </Label>
                 <Select value={formData.typeEvenement} onValueChange={(value) => handleInputChange('typeEvenement', value)}>
                   <SelectTrigger className="w-full border-thai-orange/30 focus:border-thai-orange">
-                    <SelectValue placeholder="Sélectionnez un type" />
+                    <SelectValue placeholder={t('events.form.selectType')} />
                   </SelectTrigger>
                   <SelectContent className="bg-white z-50">
-                    <SelectItem value="mariage">Mariage</SelectItem>
-                    <SelectItem value="anniversaire">Anniversaire</SelectItem>
-                    <SelectItem value="reunion">Réunion</SelectItem>
-                    <SelectItem value="autre">Autre</SelectItem>
+                    <SelectItem value="mariage">{t('events.eventTypes.wedding')}</SelectItem>
+                    <SelectItem value="anniversaire">{t('events.eventTypes.birthday')}</SelectItem>
+                    <SelectItem value="reunion">{t('events.eventTypes.meeting')}</SelectItem>
+                    <SelectItem value="autre">{t('events.eventTypes.other')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               {/* Date de l'événement */}
               <div className="space-y-2">
-                <Label className="text-thai-green font-medium">Date de l'événement *</Label>
+                <Label className="text-thai-green font-medium">
+                  {t('events.form.eventDate')} {t('common.required')}
+                </Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
@@ -165,7 +180,7 @@ const Evenements = () => {
                       )}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {dateEvenement ? format(dateEvenement, "PPP", { locale: fr }) : "Sélectionner une date"}
+                      {dateEvenement ? format(dateEvenement, "PPP", { locale: getDateLocale() }) : t('events.form.selectDate')}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0 bg-white z-50" align="start">
@@ -183,7 +198,9 @@ const Evenements = () => {
 
               {/* Nombre de personnes */}
               <div className="space-y-2">
-                <Label htmlFor="nombrePersonnes" className="text-thai-green font-medium">Nombre de personnes *</Label>
+                <Label htmlFor="nombrePersonnes" className="text-thai-green font-medium">
+                  {t('events.form.guestCount')} {t('common.required')}
+                </Label>
                 <Input
                   id="nombrePersonnes"
                   type="number"
@@ -196,22 +213,24 @@ const Evenements = () => {
 
               {/* Budget du client */}
               <div className="space-y-2">
-                <Label htmlFor="budgetClient" className="text-thai-green font-medium">Budget du client</Label>
+                <Label htmlFor="budgetClient" className="text-thai-green font-medium">
+                  {t('events.form.budget')}
+                </Label>
                 <Input
                   id="budgetClient"
                   type="number"
                   value={formData.budgetClient}
                   onChange={(e) => handleInputChange('budgetClient', e.target.value)}
-                  placeholder="En euros (€)"
+                  placeholder={t('events.form.budgetPlaceholder')}
                   className="border-thai-orange/30 focus:border-thai-orange"
                 />
               </div>
 
               {/* Plats présélectionnés */}
               <div className="space-y-3">
-                <Label className="text-thai-green font-medium">Plats présélectionnés</Label>
+                <Label className="text-thai-green font-medium">{t('events.form.preSelectedDishes')}</Label>
                 {platsLoading ? (
-                  <p className="text-thai-green/70">Chargement des plats...</p>
+                  <p className="text-thai-green/70">{t('common.loading')}</p>
                 ) : (
                   <div className="grid md:grid-cols-2 gap-3">
                     {plats?.map(plat => (
@@ -234,14 +253,16 @@ const Evenements = () => {
 
               {/* Demandes spéciales */}
               <div className="space-y-2">
-                <Label htmlFor="demandesSpeciales" className="text-thai-green font-medium">Demandes spéciales</Label>
+                <Label htmlFor="demandesSpeciales" className="text-thai-green font-medium">
+                  {t('events.form.specialRequests')}
+                </Label>
                 <Textarea
                   id="demandesSpeciales"
                   value={formData.demandesSpeciales}
                   onChange={(e) => handleInputChange('demandesSpeciales', e.target.value)}
                   rows={3}
                   className="border-thai-orange/30 focus:border-thai-orange"
-                  placeholder="Allergies, préférences, etc."
+                  placeholder={t('events.form.specialRequestsPlaceholder')}
                 />
               </div>
 
@@ -250,7 +271,7 @@ const Evenements = () => {
                 disabled={createEvenement.isPending || !formData.nomEvenement || !formData.contactEmail || !formData.typeEvenement || !dateEvenement}
                 className="w-full bg-thai-orange hover:bg-thai-orange-dark text-white py-6 text-lg rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
               >
-                {createEvenement.isPending ? 'Envoi...' : 'Envoyer ma demande d\'événement'}
+                {createEvenement.isPending ? t('events.form.sending') : t('events.form.submit')}
               </Button>
             </form>
           </CardContent>
@@ -258,6 +279,8 @@ const Evenements = () => {
       </div>
     </div>
   );
-};
+});
+
+Evenements.displayName = 'Evenements';
 
 export default Evenements;

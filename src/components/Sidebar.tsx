@@ -14,18 +14,21 @@ import {
   Shield
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
+import LanguageSelector from './LanguageSelector';
 
 const Sidebar = () => {
   const [isOpen, setIsOpen] = useState(true);
   const location = useLocation();
+  const { t } = useTranslation();
 
   const navigation = [
-    { name: 'Tableau de bord', href: '/', icon: LayoutDashboard },
-    { name: 'Pour commander', href: '/commander', icon: Utensils },
-    { name: 'Pour vos événements', href: '/evenements', icon: Calendar },
-    { name: 'Nous trouver', href: '/nous-trouver', icon: MapPin },
-    { name: 'Profil', href: '/profil', icon: User },
-    { name: 'À propos de nous/communauté', href: '/a-propos', icon: Users },
+    { name: t('navigation.dashboard'), href: '/', icon: LayoutDashboard },
+    { name: t('navigation.order'), href: '/commander', icon: Utensils },
+    { name: t('navigation.events'), href: '/evenements', icon: Calendar },
+    { name: t('navigation.findUs'), href: '/nous-trouver', icon: MapPin },
+    { name: t('navigation.profile'), href: '/profil', icon: User },
+    { name: t('navigation.about'), href: '/a-propos', icon: Users },
   ];
 
   const isActive = (path: string) => location.pathname === path;
@@ -45,7 +48,7 @@ const Sidebar = () => {
             className="w-full justify-start"
           >
             {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            {isOpen && <span className="ml-2">Fermer</span>}
+            {isOpen && <span className="ml-2">{t('common.close')}</span>}
           </Button>
         </div>
 
@@ -63,6 +66,13 @@ const Sidebar = () => {
             )}
           </Link>
         </div>
+
+        {/* Language Selector */}
+        {isOpen && (
+          <div className="p-4 border-b border-thai-orange/20">
+            <LanguageSelector />
+          </div>
+        )}
 
         {/* Navigation */}
         <nav className="p-4">
@@ -84,7 +94,7 @@ const Sidebar = () => {
             ))}
           </div>
 
-          {/* Admin Section (conditionally shown) */}
+          {/* Admin Section */}
           <div className="mt-8 pt-4 border-t border-thai-orange/20">
             <Link
               to="/admin"
@@ -94,10 +104,10 @@ const Sidebar = () => {
                   ? "bg-thai-green text-white"
                   : "text-thai-green/70 hover:bg-thai-green/10 hover:text-thai-green"
               )}
-              title="Administration"
+              title={t('navigation.administration')}
             >
               <Shield className="h-5 w-5 flex-shrink-0" />
-              {isOpen && <span className="ml-3">Administration</span>}
+              {isOpen && <span className="ml-3">{t('navigation.administration')}</span>}
             </Link>
           </div>
         </nav>
