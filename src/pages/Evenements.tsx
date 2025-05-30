@@ -62,7 +62,7 @@ const Evenements = () => {
       await createEvenement.mutateAsync({
         ...formData,
         dateEvenement: dateEvenement.toISOString(),
-        platsPreselectionnes,
+        platsPreSelectionnes: platsPreselectionnes,
         nombrePersonnes: parseInt(formData.nombrePersonnes),
         budgetClient: parseFloat(formData.budgetClient)
       });
