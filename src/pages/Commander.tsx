@@ -1,14 +1,14 @@
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Calendar } from '@/components/ui/calendar';
-import { CalendarIcon, Database, AlertCircle, Utensils } from 'lucide-react';
+import { CalendarIcon, Database, AlertCircle, Utensils, CreditCard } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -35,25 +35,19 @@ const Commander = () => {
   const [dateRetrait, setDateRetrait] = useState<Date>();
   const [heureRetrait, setHeureRetrait] = useState<string>('');
   const [demandesSpeciales, setDemandesSpeciales] = useState<string>('');
-  const [clientEmail, setClientEmail] = useState<string>('');
 
-  // Jours selon la structure exacte des champs Airtable
-  const jours = [
+  // Jours d'ouverture : lundi, mercredi, vendredi, samedi
+  const joursOuverture = [
     { value: 'lundi', label: 'Lundi', champ: 'lundiDispo' },
-    { value: 'mardi', label: 'Mardi', champ: 'mardiDispo' },
     { value: 'mercredi', label: 'Mercredi', champ: 'mercrediDispo' },
-    { value: 'jeudi', label: 'Jeudi', champ: 'jeudiDispo' },
     { value: 'vendredi', label: 'Vendredi', champ: 'vendrediDispo' },
-    { value: 'samedi', label: 'Samedi', champ: 'samediDispo' },
-    { value: 'dimanche', label: 'Dimanche', champ: 'dimancheDispo' }
+    { value: 'samedi', label: 'Samedi', champ: 'samediDispo' }
   ];
 
   const heuresDisponibles = [
-    '11:30', '12:00', '12:30', '13:00', '13:30', '14:00',
-    '18:30', '19:00', '19:30', '20:00', '20:30', '21:00'
+    '18:30', '19:00', '19:30', '20:00', '20:30'
   ];
 
-  // Utilisation de la nouvelle méthode de filtrage
   const platsDisponibles = getPlatsDisponibles(jourSelectionne);
 
   const ajouterAuPanier = (plat: typeof plats[0]) => {
@@ -68,7 +62,7 @@ const Commander = () => {
       } else {
         return [...prev, { 
           id: plat.id, 
-          nom: plat.plat, // Utilisation du champ principal "Plat"
+          nom: plat.plat,
           prix: plat.prix || 0, 
           quantite: 1 
         }];
@@ -107,7 +101,7 @@ const Commander = () => {
       return;
     }
 
-    if (!dateRetrait || !heureRetrait || !clientEmail) {
+    if (!dateRetrait || !heureRetrait) {
       toast({
         title: "Informations manquantes",
         description: "Veuillez remplir tous les champs obligatoires.",
@@ -117,13 +111,12 @@ const Commander = () => {
     }
 
     try {
-      // Formatage de la date selon le format Airtable
       const dateHeureRetrait = new Date(dateRetrait);
       const [heures, minutes] = heureRetrait.split(':');
       dateHeureRetrait.setHours(parseInt(heures), parseInt(minutes));
 
       await createCommande.mutateAsync({
-        clientEmail,
+        clientEmail: "client@example.com", // À récupérer du profil utilisateur
         panier,
         dateHeureRetrait: dateHeureRetrait.toISOString(),
         demandesSpeciales
@@ -131,15 +124,13 @@ const Commander = () => {
       
       toast({
         title: "Commande envoyée !",
-        description: `Votre commande de ${calculerTotal()}€ a été enregistrée. Vous recevrez une confirmation par email.`,
+        description: `Votre commande de ${calculerTotal()}€ a été enregistrée. Paiement sur place par carte bleue.`,
       });
       
-      // Réinitialiser le formulaire
       setPanier([]);
       setDateRetrait(undefined);
       setHeureRetrait('');
       setDemandesSpeciales('');
-      setClientEmail('');
       
     } catch (error) {
       toast({
@@ -150,7 +141,6 @@ const Commander = () => {
     }
   };
 
-  // Configuration Airtable manquante
   if (!config) {
     return (
       <div className="min-h-screen bg-gradient-thai py-8 px-4">
@@ -176,11 +166,20 @@ const Commander = () => {
   return (
     <div className="min-h-screen bg-gradient-thai py-8 px-4">
       <div className="container mx-auto max-w-4xl">
+        {/* Vérification du profil obligatoire */}
+        <Alert className="mb-6 border-blue-200 bg-blue-50">
+          <AlertCircle className="h-4 w-4 text-blue-600" />
+          <AlertDescription className="text-blue-800">
+            <strong>Profil requis :</strong> Pour commander, vous devez d'abord remplir les mentions obligatoires de votre profil.
+            <Link to="/profil" className="ml-2 underline font-medium">Compléter mon profil</Link>
+          </AlertDescription>
+        </Alert>
+
         <Card className="shadow-xl border-thai-orange/20 mb-8">
           <CardHeader className="text-center bg-gradient-to-r from-thai-orange to-thai-gold text-white rounded-t-lg">
             <div className="flex items-center justify-center mb-2">
               <Utensils className="h-8 w-8 mr-2" />
-              <CardTitle className="text-3xl font-bold">Commander à la Carte</CardTitle>
+              <CardTitle className="text-3xl font-bold">Pour Commander</CardTitle>
             </div>
             <p className="text-white/90">
               Découvrez notre cuisine thaïlandaise authentique d'Isan
@@ -188,7 +187,6 @@ const Commander = () => {
           </CardHeader>
           
           <CardContent className="p-8">
-            {/* Gestion des erreurs */}
             {platsError && (
               <Alert className="mb-6 border-red-200 bg-red-50">
                 <AlertCircle className="h-4 w-4 text-red-600" />
@@ -197,6 +195,14 @@ const Commander = () => {
                 </AlertDescription>
               </Alert>
             )}
+
+            {/* Horaires d'ouverture */}
+            <Alert className="mb-6 border-thai-orange/30 bg-thai-cream/30">
+              <AlertCircle className="h-4 w-4 text-thai-orange" />
+              <AlertDescription className="text-thai-green">
+                <strong>Horaires d'ouverture :</strong> Lundi, Mercredi, Vendredi, Samedi de 18h30 à 20h30
+              </AlertDescription>
+            </Alert>
 
             {/* Sélection du jour */}
             <div className="mb-8">
@@ -208,7 +214,7 @@ const Commander = () => {
                   <SelectValue placeholder="Sélectionnez un jour" />
                 </SelectTrigger>
                 <SelectContent className="bg-white z-50">
-                  {jours.map(jour => (
+                  {joursOuverture.map(jour => (
                     <SelectItem key={jour.value} value={jour.value}>
                       {jour.label}
                     </SelectItem>
@@ -217,11 +223,11 @@ const Commander = () => {
               </Select>
             </div>
 
-            {/* Affichage des plats selon structure Plats DB */}
+            {/* Affichage des plats */}
             {jourSelectionne && (
               <div className="mb-8">
                 <h3 className="text-xl font-semibold text-thai-green mb-4">
-                  Plats disponibles le {jours.find(j => j.value === jourSelectionne)?.label.toLowerCase()} :
+                  Plats disponibles le {joursOuverture.find(j => j.value === jourSelectionne)?.label.toLowerCase()} :
                 </h3>
                 
                 {platsLoading ? (
@@ -311,6 +317,14 @@ const Commander = () => {
                     Total: {calculerTotal()}€
                   </span>
                 </div>
+
+                {/* Information paiement */}
+                <Alert className="mt-4 border-green-200 bg-green-50">
+                  <CreditCard className="h-4 w-4 text-green-600" />
+                  <AlertDescription className="text-green-800">
+                    <strong>Paiement sur place :</strong> Nous acceptons la carte bleue
+                  </AlertDescription>
+                </Alert>
               </div>
             )}
 
@@ -318,20 +332,6 @@ const Commander = () => {
             {panier.length > 0 && (
               <div className="space-y-6">
                 <h3 className="text-xl font-semibold text-thai-green">Informations de retrait :</h3>
-                
-                <div className="space-y-2">
-                  <Label className="text-thai-green font-medium">Email *</Label>
-                  <Input
-                    type="email"
-                    value={clientEmail}
-                    onChange={(e) => setClientEmail(e.target.value)}
-                    placeholder="votre.email@example.com"
-                    className="border-thai-orange/30 focus:border-thai-orange"
-                  />
-                  <p className="text-xs text-thai-green/60">
-                    Utilisez l'email de votre profil client
-                  </p>
-                </div>
                 
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -363,7 +363,7 @@ const Commander = () => {
                   </div>
                   
                   <div className="space-y-2">
-                    <Label className="text-thai-green font-medium">Heure de retrait *</Label>
+                    <Label className="text-thai-green font-medium">Heure de retrait * (18h30 - 20h30)</Label>
                     <Select value={heureRetrait} onValueChange={setHeureRetrait}>
                       <SelectTrigger className="border-thai-orange/30 focus:border-thai-orange">
                         <SelectValue placeholder="Sélectionnez une heure" />

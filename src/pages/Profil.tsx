@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -154,12 +153,13 @@ const Profil = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="numeroTelephone" className="text-thai-green font-medium">Numéro de téléphone</Label>
+                  <Label htmlFor="numeroTelephone" className="text-thai-green font-medium">Numéro de téléphone *</Label>
                   <Input
                     id="numeroTelephone"
                     type="tel"
                     value={formData.numeroTelephone}
                     onChange={(e) => handleInputChange('numeroTelephone', e.target.value)}
+                    required
                     className="border-thai-orange/30 focus:border-thai-orange"
                   />
                 </div>
@@ -275,9 +275,16 @@ const Profil = () => {
                 </Label>
               </div>
 
+              {/* Mention RGPD */}
+              <div className="bg-thai-cream/30 p-4 rounded-lg">
+                <p className="text-sm text-thai-green/80">
+                  <strong>Protection des données :</strong> Les données collectées sont utilisées exclusivement pour le traitement des commandes.
+                </p>
+              </div>
+
               <Button 
                 type="submit" 
-                disabled={createClient.isPending || !formData.nom || !formData.prenom || !formData.email}
+                disabled={createClient.isPending || !formData.nom || !formData.prenom || !formData.email || !formData.numeroTelephone}
                 className="w-full bg-thai-orange hover:bg-thai-orange-dark text-white py-6 text-lg rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
               >
                 {createClient.isPending ? 'Création...' : 'Créer mon profil client'}
